@@ -2,11 +2,11 @@ import React from 'react';
 
 const DisplayTask = ({ tasks, deleteHandler}) => {
   return (
-      tasks.map((task, i) => {
+      tasks.map((task) => {
       return (
-        <div key={i}>
+        <div key={task.id}>
           <p>{task.todo}</p>
-          <button onClick={() => deleteHandler(i)}>삭제</button>
+          <button onClick={() => deleteHandler(task.id)}>삭제</button>
         </div>
       )
     })

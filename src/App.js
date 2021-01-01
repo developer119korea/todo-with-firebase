@@ -2,24 +2,32 @@ import React, { Component } from 'react';
 import AddTask from './AddTask';
 import DisplayTask from './DisplayTask';
 
+import { firestore } from "./firebase";
+
 class App extends Component {
   state = {
     tasks: [
-      { todo: '할일 1' },
-      { todo: '할일 2' },
-      { todo: '할일 3' },
-      { todo: '할일 4' },
     ],
     task: ''
   }
 
+  componentDidMount() {
+    const tasks = [...this.state.tasks]
+    firestore.collection('tasks').get()
+      .then(docs => {
+        docs.forEach(doc => {
+          tasks.push({ todo: doc.data().todo, id: doc.id })
+        })
+        this.setState({ tasks: tasks });
+      })
+  }
+
   onClickHandler = (e) => {
     e.preventDefault();
-    const task = { todo: this.state.task };
-    const tasks = [...this.state.tasks, task]
-    this.setState({
-      tasks,
-      task: ''
+    firestore.collection('tasks').add({todo:this.state.task})
+    .then(r=>{
+      const tasks = [...this.state.tasks, {todo:this.state.task, id:r.id}];
+      this.setState({tasks, task:''})
     })
   }
 
@@ -29,9 +37,13 @@ class App extends Component {
     })
   }
 
-  onDeleteHandler = (idx) => {
-    const tasks = this.state.tasks.filter((task, i) => i !== idx)
-    this.setState({ tasks });
+  onDeleteHandler = (id) => {
+    firestore.collection('tasks').doc(id).delete()
+      .then(() => {
+        const tasks = this.state.tasks.filter((task) => task.id !== id);
+        this.setState({ tasks });
+      }
+      )
   }
 
   render() {
@@ -43,10 +55,10 @@ class App extends Component {
           clickHandler={this.onClickHandler}
         />
         <div>
-        <DisplayTask
-          tasks={this.state.tasks}
-          deleteHandler={this.onDeleteHandler}
-        />
+          <DisplayTask
+            tasks={this.state.tasks}
+            deleteHandler={this.onDeleteHandler}
+          />
         </div>
       </div>
     );
