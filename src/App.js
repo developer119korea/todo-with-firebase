@@ -1,18 +1,27 @@
 import React, { Component } from 'react';
 import AddTask from './AddTask';
 import DisplayTask from './DisplayTask';
-
-import { firestore } from "./firebase";
+import Firebase from "./firebase";
+import Login from './Login';
 
 class App extends Component {
-  state = {
-    tasks: [
-    ],
-    task: ''
+  constructor(props) {
+    super(props);
+    this.state = {
+      tasks: [
+      ],
+      task: '',
+      login: true
+    }
+    if (Firebase.auth.currentUser === null) {
+      this.state.login = false;
+    }
   }
+
 
   componentDidMount() {
     const tasks = [...this.state.tasks]
+    const firestore = Firebase.firestore;
     firestore.collection('tasks').get()
       .then(docs => {
         docs.forEach(doc => {
@@ -20,15 +29,17 @@ class App extends Component {
         })
         this.setState({ tasks: tasks });
       })
+      .catch(e => console.log(e));
   }
 
   onClickHandler = (e) => {
     e.preventDefault();
-    firestore.collection('tasks').add({todo:this.state.task})
-    .then(r=>{
-      const tasks = [...this.state.tasks, {todo:this.state.task, id:r.id}];
-      this.setState({tasks, task:''})
-    })
+    const firestore = Firebase.firestore;
+    firestore.collection('tasks').add({ todo: this.state.task })
+      .then(r => {
+        const tasks = [...this.state.tasks, { todo: this.state.task, id: r.id }];
+        this.setState({ tasks, task: '' })
+      })
   }
 
   onChangeHandler = (e) => {
@@ -38,6 +49,7 @@ class App extends Component {
   }
 
   onDeleteHandler = (id) => {
+    const firestore = Firebase.firestore;
     firestore.collection('tasks').doc(id).delete()
       .then(() => {
         const tasks = this.state.tasks.filter((task) => task.id !== id);
@@ -46,20 +58,35 @@ class App extends Component {
       )
   }
 
+  onCheckLogin = () => {
+    if (Firebase.auth.currentUser!=null) {
+      this.setState({
+        login:true
+      })
+    }
+  }
+
   render() {
     return (
-      <div className="App">
-        <AddTask
-          value={this.state.task}
-          changeHandler={this.onChangeHandler}
-          clickHandler={this.onClickHandler}
-        />
-        <div>
-          <DisplayTask
-            tasks={this.state.tasks}
-            deleteHandler={this.onDeleteHandler}
-          />
-        </div>
+      <div>
+        {this.state.login ?
+          <div>
+            <div className="App">
+              <AddTask
+                value={this.state.task}
+                changeHandler={this.onChangeHandler}
+                clickHandler={this.onClickHandler}
+              />
+              <div>
+                <DisplayTask
+                  tasks={this.state.tasks}
+                  deleteHandler={this.onDeleteHandler}
+                />
+              </div>
+            </div>
+          </div>
+          : <Login login={this.onCheckLogin}></Login>
+        }
       </div>
     );
   }
